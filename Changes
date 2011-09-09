@@ -1,5 +1,9 @@
 Revision history for WWW-Correios-SRO
 
+0.02    09/09/2011
+        Fixed bug where certain items were not being properly fetched
+        (thanks MANTOVANI for the report)
+
 0.01    07/06/2010
         First version, released on an unsuspecting world.
 
