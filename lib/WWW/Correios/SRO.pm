@@ -23,12 +23,11 @@ use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en );
 
 our $VERSION = '0.01';
-
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
-sub sro    { _sro(001, @_) }
-sub sro_en { _sro(002, @_) }
+sub sro    { _sro('001', @_) }
+sub sro_en { _sro('002', @_) }
 
 sub _sro {
     my ($LANG, $code, $_url) = @_;
