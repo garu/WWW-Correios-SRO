@@ -97,4 +97,31 @@ is($tracker[9]->status, 'Postado', '[9] correct status');
 is($tracker[9]->extra, undef, '[9] correct extra');
 
 
+### SECOND SAMPLE (was failing in 0.1)
+$uri = URI::file->new_abs('t/SRO2.html');
+
+@tracker = WWW::Correios::SRO::sro(0, $uri);
+$single  = WWW::Correios::SRO::sro(0, $uri);
+
+is(scalar @tracker, 2, 'found 2 entries in sample #2');
+foreach (@tracker) {
+    isa_ok($_, 'WWW::Correios::SRO::Item');
+    can_ok($_, qw(data date location local status extra));
+}
+
+is_deeply($single, $tracker[0], 'checking single-wantarray results in sample #2');
+
+### item 0
+is($tracker[0]->data, '22/08/2011 20:51', '[0] correct date in sample #2');
+is($tracker[0]->date, '22/08/2011 20:51', '[0] correct date (2) in sample #2');
+is($tracker[0]->local, 'CHINA - CHINA', '[0] correct location in sample #2');
+is($tracker[0]->location, 'CHINA - CHINA', '[0] correct location (2) in sample #2');
+is($tracker[0]->status, 'Encaminhado', '[0] correct status in sample #2');
+is(
+    $tracker[0]->extra,
+    'Em trânsito para UNIDADE DE TRATAMENTO INTERNACIONAL - BRASIL',
+    '[0] correct extra in sample #2'
+);
+
+
 done_testing;
