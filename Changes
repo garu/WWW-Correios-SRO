@@ -1,9 +1,13 @@
 Revision history for WWW-Correios-SRO
 
-0.02    09/09/2011
-        Fixed bug where certain items were not being properly fetched
+0.03    2012-03-30
+        - Updating Changes file for compliance against latest
+        CPAN::Changes specification
+
+0.02    2011-09-09
+        - Fixed bug where certain items were not being properly fetched
         (thanks MANTOVANI for the report)
 
-0.01    07/06/2010
-        First version, released on an unsuspecting world.
+0.01    2010-06-07
+        - First version, released on an unsuspecting world.
 
