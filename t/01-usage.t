@@ -5,8 +5,13 @@ use URI::file;
 
 my $uri = URI::file->new_abs('t/SRO.html');
 
-my @tracker = WWW::Correios::SRO::sro(0, $uri);
-my $single  = WWW::Correios::SRO::sro(0, $uri);
+my $code    = 'SS123456785BR';
+
+ok ! WWW::Correios::SRO::sro_ok( 0 ), '0 is a bogus SRO';
+ok WWW::Correios::SRO::sro_ok($code), "$code is a valid SRO";
+
+my @tracker = WWW::Correios::SRO::sro($code, $uri);
+my $single  = WWW::Correios::SRO::sro($code, $uri);
 
 is(scalar @tracker, 10, 'found 10 entries');
 foreach (@tracker) {
@@ -100,8 +105,9 @@ is($tracker[9]->extra, undef, '[9] correct extra');
 ### SECOND SAMPLE (was failing in 0.1)
 $uri = URI::file->new_abs('t/SRO2.html');
 
-@tracker = WWW::Correios::SRO::sro(0, $uri);
-$single  = WWW::Correios::SRO::sro(0, $uri);
+my $other_code = 'SL473124829BR'; # exemplo dos correios
+@tracker = WWW::Correios::SRO::sro($code, $uri);
+$single  = WWW::Correios::SRO::sro($code, $uri);
 
 is(scalar @tracker, 2, 'found 2 entries in sample #2');
 foreach (@tracker) {

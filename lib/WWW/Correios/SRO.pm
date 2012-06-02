@@ -20,17 +20,208 @@ use LWP::UserAgent;
 use HTML::TreeBuilder;
 
 use parent 'Exporter';
-our @EXPORT_OK = qw( sro sro_en );
+our @EXPORT_OK = qw( sro sro_en sro_ok );
 
 our $VERSION = '0.03';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
+
+# retirado de http://www.correios.com.br/servicos/rastreamento/internacional/siglas.cfm
+my %siglas = (
+  AL => 'AGENTES DE LEITURA',
+  AR => 'AVISO DE RECEBIMENTO',
+  CA => 'OBJETO INTERNACIONAL',
+  CC => 'COLIS POSTAUX',
+  CD => 'OBJETO INTERNACIONAL',
+  CE => 'OBJETO INTERNACIONAL',
+  CG => 'OBJETO INTERNACIONAL',
+  CJ => 'REGISTRADO INTERNACIONAL',
+  CK => 'OBJETO INTERNACIONAL',
+  CL => 'OBJETO INTERNACIONAL',
+  CP => 'COLIS POSTAUX',
+  CR => 'CARTA REGISTRADA SEM VALOR DECLARADO',
+  CS => 'OBJETO INTERNACIONAL',
+  CT => 'OBJETO INTERNACIONAL',
+  CV => 'REGISTRADO INTERNACIONAL',
+  CY => 'OBJETO INTERNACIONAL',
+  DA => 'REM EXPRES COM AR DIGITAL',
+  DB => 'REM EXPRES COM AR DIGITAL BRADESCO',
+  DC => 'REM EXPRESSA CRLV/CRV/CNH e NOTIFICAÇÃO',
+  DD => 'DEVOLUÇÃO DE DOCUMENTOS',
+  DE => 'REMESSA EXPRESSA TALÃO E CARTÃO C/ AR',
+  DI => 'REM EXPRES COM AR DIGITAL ITAU',
+  DP => 'REM EXPRES COM AR DIGITAL PRF',
+  DS => 'REM EXPRES COM AR DIGITAL SANTANDER',
+  DT => 'REMESSA ECON.SEG.TRANSITO C/AR DIGITAL',
+  EA => 'OBJETO INTERNACIONAL',
+  EB => 'OBJETO INTERNACIONAL',
+  EC => 'ENCOMENDA PAC',
+  ED => 'OBJETO INTERNACIONAL',
+  EE => 'SEDEX INTERNACIONAL',
+  EF => 'OBJETO INTERNACIONAL',
+  EG => 'OBJETO INTERNACIONAL',
+  EH => 'ENCOMENDA NORMAL COM AR DIGITAL',
+  EI => 'OBJETO INTERNACIONAL',
+  EJ => 'ENCOMENDA INTERNACIONAL',
+  EK => 'OBJETO INTERNACIONAL',
+  EL => 'OBJETO INTERNACIONAL',
+  EM => 'OBJETO INTERNACIONAL',
+  EN => 'ENCOMENDA NORMAL NACIONAL',
+  EP => 'OBJETO INTERNACIONAL',
+  EQ => 'ENCOMENDA SERVIÇO NÃO EXPRESSA ECT',
+  ER => 'REGISTRADO',
+  ES => 'e-SEDEX',
+  EF => 'OBJETO INTERNACIONAL',
+  EG => 'OBJETO INTERNACIONAL',
+  EF => 'OBJETO INTERNACIONAL',
+  EU => 'OBJETO INTERNACIONAL',
+  EV => 'OBJETO INTERNACIONAL',
+  EX => 'OBJETO INTERNACIONAL',
+  FE => 'ENCOMENDA FNDE',
+  FF => 'REGISTRADO DETRAN',
+  FH => 'REGISTRADO FAC COM AR DIGITAL',
+  FM => 'REGISTRADO - FAC MONITORADO',
+  FR => 'REGISTRADO FAC',
+  IA => 'INTEGRADA AVULSA',
+  IC => 'INTEGRADA A COBRAR',
+  ID => 'INTEGRADA DEVOLUCAO DE DOCUMENTO',
+  IE => 'INTEGRADA ESPECIAL',
+  IF => 'CPF',
+  II => 'INTEGRADA INTERNO',
+  IK => 'INTEGRADA COM COLETA SIMULTANEA',
+  IM => 'INTEGRADA MEDICAMENTOS',
+  IN => 'OBJ DE CORRESP E EMS REC EXTERIOR',
+  IP => 'INTEGRADA PROGRAMADA',
+  IR => 'IMPRESSO REGISTRADO',
+  IS => 'INTEGRADA STANDARD',
+  IT => 'INTEGRADO TERMOLÁBIL',
+  IU => 'INTEGRADA URGENTE',
+  JA => 'REMESSA ECONOMICA C/AR DIGITAL',
+  JB => 'REMESSA ECONOMICA C/AR DIGITAL',
+  JC => 'REMESSA ECONOMICA C/AR DIGITAL',
+  JJ => 'REGISTRADO JUSTIÇA',
+  LC => 'CARTA EXPRESSA',
+  LE => 'LOGÍSTICA REVERSA ECONOMICA',
+  LF => 'OBJETO INTERNACIONAL',
+  LI => 'OBJETO INTERNACIONAL',
+  LJ => 'OBJETO INTERNACIONAL',
+  LM => 'OBJETO INTERNACIONAL',
+  LS => 'LOGISTICA REVERSA SEDEX',
+  LV => 'LOGISTICA REVERSA EXPRESSA',
+  LX => 'CARTA EXPRESSA',
+  LY => 'CARTA EXPRESSA',
+  MA => 'SERVIÇOS ADICIONAIS',
+  MB => 'TELEGRAMA DE BALCÃO',
+  MC => 'MALOTE CORPORATIVO',
+  MD => 'SEDEX MUNDI - DOCUMENTO INTERNO',
+  ME => 'TELEGRAMA',
+  MF => 'TELEGRAMA FONADO',
+  MK => 'TELEGRAMA CORPORATIVO',
+  MM => 'TELEGRAMA GRANDES CLIENTES',
+  MP => 'TELEGRAMA PRÉ-PAGO',
+  MS => 'ENCOMENDA SAUDE',
+  MT => 'TELEGRAMA VIA TELEMAIL',
+  MY => 'TELEGRAMA INTERNACIONAL ENTRANTE',
+  MZ => 'TELEGRAMA VIA CORREIOS ON LINE',
+  NE => 'TELE SENA RESGATADA',
+  PA => 'PASSAPORTE',
+  PB => 'ENCOMENDA PAC - NÃO URGENTE',
+  PR => 'REEMBOLSO POSTAL - CLIENTE AVULSO',
+  RA => 'REGISTRADO PRIORITÁRIO',
+  RB => 'CARTA REGISTRADA',
+  RC => 'CARTA REGISTRADA COM VALOR DECLARADO',
+  RD => 'REMESSA ECONOMICA DETRAN',
+  RE => 'REGISTRADO ECONÔMICO',
+  RF => 'OBJETO DA RECEITA FEDERAL',
+  RG => 'REGISTRADO DO SISTEMA SARA',
+  RH => 'REGISTRADO COM AR DIGITAL',
+  RI => 'REGISTRADO',
+  RJ => 'REGISTRADO AGÊNCIA',
+  RK => 'REGISTRADO AGÊNCIA',
+  RL => 'REGISTRADO LÓGICO',
+  RM => 'REGISTRADO AGÊNCIA',
+  RN => 'REGISTRADO AGÊNCIA',
+  RO => 'REGISTRADO AGÊNCIA',
+  RP => 'REEMBOLSO POSTAL - CLIENTE INSCRITO',
+  RQ => 'REGISTRADO AGÊNCIA',
+  RR => 'CARTA REGISTRADA SEM VALOR DECLARADO',
+  RS => 'REGISTRADO LÓGICO',
+  RT => 'REM ECON TALAO/CARTAO SEM AR DIGITA',
+  RU => 'REGISTRADO SERVIÇO ECT',
+  RV => 'REM ECON CRLV/CRV/CNH COM AR DIGITAL',
+  RW => 'OBJETO INTERNACIONAL',
+  RX => 'OBJETO INTERNACIONAL',
+  RY => 'REM ECON TALAO/CARTAO COM AR DIGITAL',
+  RZ => 'REGISTRADO',
+  SA => 'SEDEX ANOREG',
+  SC => 'SEDEX A COBRAR',
+  SD => 'REMESSA EXPRESSA DETRAN',
+  SE => 'ENCOMENDA SEDEX',
+  SF => 'SEDEX AGÊNCIA',
+  SG => 'SEDEX DO SISTEMA SARA',
+  RH => 'REGISTRADO COM AR DIGITAL',
+  SI => 'SEDEX AGÊNCIA',
+  SJ => 'SEDEX HOJE',
+  SK => 'SEDEX AGÊNCIA',
+  SL => 'SEDEX LÓGICO',
+  SM => 'SEDEX MESMO DIA',
+  SN => 'SEDEX COM VALOR DECLARADO',
+  SO => 'SEDEX AGÊNCIA',
+  SP => 'SEDEX PRÉ-FRANQUEADO',
+  SQ => 'SEDEX',
+  SR => 'SEDEX',
+  SS => 'SEDEX FÍSICO',
+  ST => 'REM EXPRES TALAO/CARTAO SEM AR DIGITAL',
+  SU => 'ENCOMENDA SERVIÇO EXPRESSA ECT',
+  SV => 'REM EXPRES CRLV/CRV/CNH COM AR DIGITAL',
+  SW => 'e-SEDEX',
+  SX => 'SEDEX 10',
+  SY => 'REM EXPRES TALAO/CARTAO COM AR DIGITAL',
+  SZ => 'SEDEX AGÊNCIA',
+  TE => 'TESTE (OBJETO PARA TREINAMENTO)',
+  TS => 'TESTE (OBJETO PARA TREINAMENTO)',
+  VA => 'ENCOMENDAS COM VALOR DECLARADO',
+  VC => 'ENCOMENDAS',
+  VD => 'ENCOMENDAS COM VALOR DECLARADO',
+  VE => 'ENCOMENDAS',
+  VF => 'ENCOMENDAS COM VALOR DECLARADO',
+  VV => 'OBJETO INTERNACIONAL',
+  XM => 'SEDEX MUNDI',
+  XR => 'ENCOMENDA SUR POSTAL EXPRESSO',
+  XX => 'ENCOMENDA SUR POSTAL 24 HORAS',
+);
+
+# http://www.correios.com.br/voce/enderecamento/Arquivos/guia_tecnico_encomendas.pdf
+my $siglas_re = do { my $str = join '|', keys %siglas; qr/$str/ };
+sub sro_ok {
+  if ( $_[0] =~ m/^(?:$siglas_re)([0-9]{8})([0-9])BR$/i ) {
+    my ($numeros, $dv) = ($1, $2);
+    my @numeros = split // => $numeros;
+    my @magica  = ( 8, 6, 4, 2, 3, 5, 9, 7 );
+
+    my $soma = 0;
+    foreach ( 0 .. 7 ) {
+      $soma += ( $numeros[$_] * $magica[$_] );
+    }
+
+    my $resto = $soma % 11;
+    my $dv_check = $resto == 0 ? 5
+                 : $resto == 1 ? 0
+                 : 11 - $resto
+                 ;
+    return $dv == $dv_check;
+  }
+  else {
+    return;
+  }
+}
 
 sub sro    { _sro('001', @_) }
 sub sro_en { _sro('002', @_) }
 
 sub _sro {
     my ($LANG, $code, $_url) = @_;
+    return unless $code && sro_ok( $code );
 
     # internal use only: we override this during testing
     $_url = 'http://websro.correios.com.br/sro_bin/txect01$.Inexistente?P_LINGUA=' . $LANG . "&P_TIPO=002&P_COD_LIS=$code"
@@ -96,11 +287,15 @@ Este módulo oferece APIs em inglês e português. Documentação também é mos
 
 API em português:
 
-    use WWW::Correios::SRO 'sro';
+    use WWW::Correios::SRO qw( sro sro_ok );
 
-    my @historico_completo = sro( 'SS123456789BR' );
+    my $codigo = 'SS123456789BR';  # insira seu código de rastreamento aqui
 
-    my $ultimo = sro( 'SS123456789BR' );
+    return 'SRO inválido' unless sro_ok( $codigo );
+
+    my @historico_completo = sro( $codigo );
+
+    my $ultimo = sro( $codigo );
 
     $ultimo->data;    # '22/05/2010 12:10'
     $ultimo->local;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
@@ -109,11 +304,15 @@ API em português:
 
 English API:
 
-    use WWW::Correios::SRO 'sro_en';
+    use WWW::Correios::SRO qw( sro_en sro_ok );
 
-    my @historico_completo = sro_en( 'SS123456789BR' );
+    my $code = 'SS123456789BR';  # insert tracking code here
 
-    my $ultimo = sro_en( 'SS123456789BR' );
+    return 'invalid SRO' unless sro_ok( $code );
+
+    my @full_history = sro_en( $code );
+
+    my $last = sro_en( $code );
 
     $ultimo->date;       # '22/05/2010 12:10'
     $ultimo->location;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
@@ -151,6 +350,16 @@ O mesmo que C<sro()>, mas com mensagens em inglês.
 
 Same as C<sro()>, but with messages in english.
 
+
+=head2 sro_ok
+
+Retorna verdadeiro se o código de rastreamento passado é válido, caso contrário retorna falso. Essa função é chamada automaticamente pelas funções C<sro> e C<sro_en>, então você
+não precisa se preocupar em chamá-la diretamente. Ela deve ser usada quando você quer apenas saber se o código é válido ou não, sem precisar fazer uma consulta HTTP ao site dos
+correios. Essa função B<não> elimina espaços da string, você deve fazer sua própria higienização.
+
+--
+
+Returns true if the given tracking code is valid, false otherwise. This function is automatically called by the C<sro> and C<sro_en> functions, so you don't have to worry about calling it directly. It should be used when you just want to know whether the tracking code is valid or not, without the need to make an HTTP request to the postal office website. This function does B<not> trim whitespaces from the given string, you have to sanitize it by yourself.
 
 =head1 OBJETO RETORNADO/RETURNED OBJECT
 
