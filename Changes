@@ -1,5 +1,9 @@
 Revision history for WWW-Correios-SRO
 
+0.04    2012-03-30
+        - new exportable sro_ok() function to do proper SRO
+          code validation (without url queries)
+
 0.03    2012-03-30
         - Updating Changes file for compliance against latest
         CPAN::Changes specification

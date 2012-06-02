@@ -22,7 +22,7 @@ use HTML::TreeBuilder;
 use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en sro_ok );
 
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
