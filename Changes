@@ -1,5 +1,8 @@
 Revision history for WWW-Correios-SRO
 
+0.05    2013-01-30
+        - Updating the list of valid tracking code identifiers.
+
 0.04    2012-03-30
         - new exportable sro_ok() function to do proper SRO
           code validation (without url queries)
