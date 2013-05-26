@@ -18,6 +18,7 @@ use warnings;
 
 use LWP::UserAgent;
 use HTML::TreeBuilder;
+use Try::Tiny;
 
 use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en sro_ok );
@@ -260,7 +261,13 @@ sub _sro {
     return unless $response->is_success;
 
     my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
-    my @items = $html->find('table')->find('tr');
+    
+    try{
+        my @items = $html->find('table')->find('tr');
+    }catch{
+        return;  
+    };
+    
     shift @items; # drop the first 'tr'
 
     my $i = 0;
