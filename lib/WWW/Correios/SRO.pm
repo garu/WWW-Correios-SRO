@@ -261,12 +261,11 @@ sub _sro {
 
     my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
     
-    my @items;
     my $table;
     
     return unless $table = $html->find('table');
     
-    @items = $table->find('tr');
+    my @items = $table->find('tr');
 
     shift @items; # drop the first 'tr'
 
