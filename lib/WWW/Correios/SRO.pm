@@ -264,7 +264,9 @@ sub _sro {
     my @items;
     my $table;
     
-    return unless $table = $html->find('table') and @items = $table->find('tr');
+    return unless $table = $html->find('table');
+    
+    @items = $table->find('tr');
 
     shift @items; # drop the first 'tr'
 
