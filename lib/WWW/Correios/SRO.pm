@@ -260,7 +260,13 @@ sub _sro {
     return unless $response->is_success;
 
     my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
-    my @items = $html->find('table')->find('tr');
+    
+    my $table = $html->find('table');
+    
+    return unless $table;
+    
+    my @items = $table->find('tr');
+
     shift @items; # drop the first 'tr'
 
     my $i = 0;
@@ -338,10 +344,10 @@ English API:
 
     my $last = sro_en( $code );
 
-    $ultimo->date;       # '22/05/2010 12:10'
-    $ultimo->location;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
-    $ultimo->status;     # 'No receiver at the address'
-    $ultimo->extra;      # 'Delivery will be retried'
+    $last->date;       # '22/05/2010 12:10'
+    $last->location;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
+    $last->status;     # 'No receiver at the address'
+    $last->extra;      # 'Delivery will be retried'
 
 Note: All messages are created by the brazilian post office website. Some messages might not be translated.
 
