@@ -261,9 +261,9 @@ sub _sro {
 
     my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
     
-    my $table;
+    my $table = $html->find('table');
     
-    return unless $table = $html->find('table');
+    return unless $table;
     
     my @items = $table->find('tr');
 
