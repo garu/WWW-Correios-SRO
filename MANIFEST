@@ -1,12 +1,14 @@
 Changes
-MANIFEST
-Makefile.PL
-README
 lib/WWW/Correios/SRO.pm
+Makefile.PL
+MANIFEST
+META.yml			Module meta-data (added by MakeMaker)
+README
 t/00-load.t
 t/01-usage.t
-t/SRO.html
-t/SRO2.html
 t/manifest.t
 t/pod.t
-META.yml                                 Module meta-data (added by MakeMaker)
+t/SRO.html
+t/SRO2.html
+t/SRO3.html
+t/SRO4.html
