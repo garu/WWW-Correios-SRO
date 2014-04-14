@@ -1,5 +1,8 @@
 Revision history for WWW-Correios-SRO
 
+0.06	2014-04-14
+	- Updating the list of valid tracking code identifiers (rafaelol).
+
 0.05    2013-01-31
         - Updating the list of valid tracking code identifiers (BBUSS).
 

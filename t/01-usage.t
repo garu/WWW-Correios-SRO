@@ -130,4 +130,108 @@ is(
 );
 
 
+### THIRD SAMPLE (new code - DG - still unknown the proper usage for it)
+
+$uri = URI::file->new_abs('t/SRO3.html');
+
+my $other_code = 'DG289357397BR'; # exemplo dos correios
+@tracker = WWW::Correios::SRO::sro($code, $uri);
+$single  = WWW::Correios::SRO::sro($code, $uri);
+
+is(scalar @tracker, 6, 'found 6 entries in sample #3');
+foreach (@tracker) {
+    isa_ok($_, 'WWW::Correios::SRO::Item');
+    can_ok($_, qw(data date location local status extra));
+}
+
+is_deeply($single, $tracker[0], 'checking single-wantarray results in sample #3');
+
+### item 0
+is($tracker[0]->data, '06/03/2014 16:53', '[0] correct date');
+is($tracker[0]->date, '06/03/2014 16:53', '[0] correct date (2)');
+is($tracker[0]->local, 'AC EUCLIDES DA CUNHA - EUCLIDES DA CUNHA/BA', '[0] correct location');
+is($tracker[0]->location, 'AC EUCLIDES DA CUNHA - EUCLIDES DA CUNHA/BA', '[0] correct location (2)');
+is($tracker[0]->status, 'Entrega Efetuada', '[0] correct status');
+is($tracker[0]->extra, undef, '[1] correct extra');
+
+### item 1
+is($tracker[1]->data, '06/03/2014 10:47', '[1] correct date');
+is($tracker[1]->date, '06/03/2014 10:47', '[1] correct date (2)');
+is($tracker[1]->local, 'EUCLIDES DA CUNHA/BA', '[1] correct location');
+is($tracker[1]->location, 'EUCLIDES DA CUNHA/BA', '[1] correct location (2)');
+is($tracker[1]->status, 'Saiu para entrega ao destinatário', '[1] correct status');
+is($tracker[1]->extra, undef, '[1] correct extra');
+
+### item 2
+is($tracker[2]->data, '05/03/2014 21:38', '[2] correct date');
+is($tracker[2]->date, '05/03/2014 21:38', '[2] correct date (2)');
+is($tracker[2]->local, 'CTE SALVADOR - SALVADOR/BA', '[2] correct location');
+is($tracker[2]->location, 'CTE SALVADOR - SALVADOR/BA', '[2] correct location (2)');
+is($tracker[2]->status, 'Encaminhado', '[2] correct status');
+is($tracker[2]->extra, 'Em trânsito para AC EUCLIDES DA CUNHA - EUCLIDES DA CUNHA/BA', '[2] correct extra');
+
+### item 3
+is($tracker[3]->data, '28/02/2014 21:39', '[3] correct date');
+is($tracker[3]->date, '28/02/2014 21:39', '[3] correct date (2)');
+is($tracker[3]->local, 'CTE BELO HORIZONTE - BELO HORIZONTE/MG', '[3] correct location');
+is($tracker[3]->location, 'CTE BELO HORIZONTE - BELO HORIZONTE/MG', '[3] correct location (2)');
+is($tracker[3]->status, 'Encaminhado', '[3] correct status');
+is($tracker[3]->extra, 'Encaminhado para CTE SALVADOR - SALVADOR/BA', '[3] correct extra');
+
+### item 4
+is($tracker[4]->data, '28/02/2014 17:31', '[4] correct date');
+is($tracker[4]->date, '28/02/2014 17:31', '[4] correct date (2)');
+is($tracker[4]->local, 'AC JUSTINOPOLIS - RIBEIRAO DAS NEVES/MG', '[4] correct location');
+is($tracker[4]->location, 'AC JUSTINOPOLIS - RIBEIRAO DAS NEVES/MG', '[4] correct location (2)');
+is($tracker[4]->status, 'Encaminhado', '[4] correct status');
+is($tracker[4]->extra, 'Em trânsito para CTC BELO HORIZONTE - BELO HORIZONTE/MG', '[4] correct extra');
+
+### item 5
+is($tracker[5]->data, '28/02/2014 17:09', '[5] correct date');
+is($tracker[5]->date, '28/02/2014 17:09', '[5] correct date (2)');
+is($tracker[5]->local, 'AC JUSTINOPOLIS - RIBEIRAO DAS NEVES/MG', '[5] correct location');
+is($tracker[5]->location, 'AC JUSTINOPOLIS - RIBEIRAO DAS NEVES/MG', '[5] correct location (2)');
+is($tracker[5]->status, 'Postado depois do horário limite da agência', '[5] correct status');
+is($tracker[5]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', '[5] correct extra');
+
+### FOURTH SAMPLE (new code - JH - still unknown the proper usage for it)
+
+$uri = URI::file->new_abs('t/SRO4.html');
+
+my $other_code = 'JH748867227BR'; # exemplo dos correios
+@tracker = WWW::Correios::SRO::sro($code, $uri);
+$single  = WWW::Correios::SRO::sro($code, $uri);
+
+is(scalar @tracker, 3, 'found 3 entries in sample #4');
+foreach (@tracker) {
+    isa_ok($_, 'WWW::Correios::SRO::Item');
+    can_ok($_, qw(data date location local status extra));
+}
+
+is_deeply($single, $tracker[0], 'checking single-wantarray results in sample #4');
+
+### item 0
+is($tracker[0]->data, '04/04/2014 16:29', '[0] correct date');
+is($tracker[0]->date, '04/04/2014 16:29', '[0] correct date (2)');
+is($tracker[0]->local, 'CDD HUMAITA - RIO DE JANEIRO/RJ', '[0] correct location');
+is($tracker[0]->location, 'CDD HUMAITA - RIO DE JANEIRO/RJ', '[0] correct location (2)');
+is($tracker[0]->status, 'Entrega Efetuada', '[0] correct status');
+is($tracker[0]->extra, undef, '[1] correct extra');
+
+### item 1
+is($tracker[1]->data, '04/04/2014 11:55', '[1] correct date');
+is($tracker[1]->date, '04/04/2014 11:55', '[1] correct date (2)');
+is($tracker[1]->local, 'RIO DE JANEIRO/RJ', '[1] correct location');
+is($tracker[1]->location, 'RIO DE JANEIRO/RJ', '[1] correct location (2)');
+is($tracker[1]->status, 'Saiu para entrega ao destinatário', '[1] correct status');
+is($tracker[1]->extra, undef, '[1] correct extra');
+
+### item 2
+is($tracker[2]->data, '31/03/2014 18:03', '[2] correct date');
+is($tracker[2]->date, '31/03/2014 18:03', '[2] correct date (2)');
+is($tracker[2]->local, 'AGF PRAIA DA ENSEADA - GUARUJA/SP', '[2] correct location');
+is($tracker[2]->location, 'AGF PRAIA DA ENSEADA - GUARUJA/SP', '[2] correct location (2)');
+is($tracker[2]->status, 'Postado depois do horário limite da agência', '[2] correct status');
+is($tracker[2]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', '[2] correct extra');
+
 done_testing;
