@@ -1,5 +1,9 @@
 Revision history for WWW-Correios-SRO
 
+0.08    2014-06-24
+    - Removing cruft that shipped on the previous release (JALOPES)
+    - Updating the list of valid tracking code identifiers (JALOPES)
+
 0.07	2014-04-15
 	- Removing cruft that shipped on the previous release (RLOPES)
 

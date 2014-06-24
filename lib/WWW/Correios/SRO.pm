@@ -22,12 +22,12 @@ use HTML::TreeBuilder;
 use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en sro_ok );
 
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
 # retirado de http://www.correios.com.br/servicos/rastreamento/internacional/siglas.cfm
-# as siglas DH e JH existem e são utilizadas pelos correios. Porém não
+# as siglas DM, DH e JH existem e são utilizadas pelos correios. Porém não
 # encontramos o seu significado no site. Deixamos como DESCONHECIDO
 # até conseguirmos uma resposta concreta sobre o significado destas
 # siglas
