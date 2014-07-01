@@ -134,7 +134,7 @@ is(
 
 $uri = URI::file->new_abs('t/SRO3.html');
 
-my $other_code = 'DG289357397BR'; # exemplo dos correios
+$other_code = 'DG289357397BR'; # exemplo dos correios
 @tracker = WWW::Correios::SRO::sro($other_code, $uri);
 $single  = WWW::Correios::SRO::sro($other_code, $uri);
 
@@ -198,7 +198,7 @@ is($tracker[5]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', 
 
 $uri = URI::file->new_abs('t/SRO4.html');
 
-my $other_code = 'JH748867227BR'; # exemplo dos correios
+$other_code = 'JH748867227BR'; # exemplo dos correios
 @tracker = WWW::Correios::SRO::sro($other_code, $uri);
 $single  = WWW::Correios::SRO::sro($other_code, $uri);
 
@@ -238,7 +238,7 @@ is($tracker[2]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', 
 
 $uri = URI::file->new_abs('t/SRO5.html');
 
-my $other_code = 'DM010256601BR'; # exemplo dos correios
+$other_code = 'DM010256601BR'; # exemplo dos correios
 @tracker = WWW::Correios::SRO::sro($other_code, $uri);
 $single  = WWW::Correios::SRO::sro($other_code, $uri);
 
