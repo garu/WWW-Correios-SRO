@@ -106,8 +106,8 @@ is($tracker[9]->extra, undef, '[9] correct extra');
 $uri = URI::file->new_abs('t/SRO2.html');
 
 my $other_code = 'SL473124829BR'; # exemplo dos correios
-@tracker = WWW::Correios::SRO::sro($code, $uri);
-$single  = WWW::Correios::SRO::sro($code, $uri);
+@tracker = WWW::Correios::SRO::sro($other_code, $uri);
+$single  = WWW::Correios::SRO::sro($other_code, $uri);
 
 is(scalar @tracker, 2, 'found 2 entries in sample #2');
 foreach (@tracker) {
@@ -135,8 +135,8 @@ is(
 $uri = URI::file->new_abs('t/SRO3.html');
 
 my $other_code = 'DG289357397BR'; # exemplo dos correios
-@tracker = WWW::Correios::SRO::sro($code, $uri);
-$single  = WWW::Correios::SRO::sro($code, $uri);
+@tracker = WWW::Correios::SRO::sro($other_code, $uri);
+$single  = WWW::Correios::SRO::sro($other_code, $uri);
 
 is(scalar @tracker, 6, 'found 6 entries in sample #3');
 foreach (@tracker) {
@@ -199,8 +199,8 @@ is($tracker[5]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', 
 $uri = URI::file->new_abs('t/SRO4.html');
 
 my $other_code = 'JH748867227BR'; # exemplo dos correios
-@tracker = WWW::Correios::SRO::sro($code, $uri);
-$single  = WWW::Correios::SRO::sro($code, $uri);
+@tracker = WWW::Correios::SRO::sro($other_code, $uri);
+$single  = WWW::Correios::SRO::sro($other_code, $uri);
 
 is(scalar @tracker, 3, 'found 3 entries in sample #4');
 foreach (@tracker) {
@@ -239,8 +239,8 @@ is($tracker[2]->extra, 'Objeto sujeito a encaminhamento no próximo dia útil', 
 $uri = URI::file->new_abs('t/SRO5.html');
 
 my $other_code = 'DM010256601BR'; # exemplo dos correios
-@tracker = WWW::Correios::SRO::sro($code, $uri);
-$single  = WWW::Correios::SRO::sro($code, $uri);
+@tracker = WWW::Correios::SRO::sro($other_code, $uri);
+$single  = WWW::Correios::SRO::sro($other_code, $uri);
 
 is(scalar @tracker, 6, 'found 6 entries in sample #5');
 foreach (@tracker) {
