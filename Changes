@@ -1,5 +1,8 @@
 Revision history for WWW-Correios-SRO
 
+0.09    2014-08-13
+    - Updating the list of valid tracking code identifiers (RLOPES).
+
 0.08    2014-06-24
     - Updating the list of valid tracking code identifiers (JALOPES)
 
