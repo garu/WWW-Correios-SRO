@@ -301,6 +301,68 @@ is($tracker[5]->location, 'RIBEIRAO DAS NEVES / MG', '[5] correct location (5)')
 is($tracker[5]->status, 'Objeto postado', '[5] correct status');
 is($tracker[5]->extra, undef, '[5] correct extra');
 
+### SIXTH SAMPLE (new code - PE - still unknown the proper usage for it)
 
+$uri = URI::file->new_abs('t/SRO6.html');
+
+$other_code = 'PE096907205BR'; # exemplo dos correios
+@tracker = WWW::Correios::SRO::sro($other_code, $uri);
+$single  = WWW::Correios::SRO::sro($other_code, $uri);
+
+is(scalar @tracker, 6, 'found 6 entries in sample #6');
+foreach (@tracker) {
+    isa_ok($_, 'WWW::Correios::SRO::Item');
+    can_ok($_, qw(data date location local status extra));
+}
+
+is_deeply($single, $tracker[0], 'checking single-wantarray results in sample #6');
+
+### item 0
+is($tracker[0]->data, '01/08/2014 13:43', '[0] correct date');
+is($tracker[0]->date, '01/08/2014 13:43', '[0] correct date (2)');
+is($tracker[0]->local, 'CEE BRASILIA NORTE - BRASILIA/DF', '[0] correct location');
+is($tracker[0]->location, 'CEE BRASILIA NORTE - BRASILIA/DF', '[0] correct location (2)');
+is($tracker[0]->status, 'Entrega Efetuada', '[0] correct status');
+is($tracker[0]->extra, undef, '[1] correct extra');
+
+### item 1
+is($tracker[1]->data, '01/08/2014 10:26', '[1] correct date');
+is($tracker[1]->date, '01/08/2014 10:26', '[1] correct date (2)');
+is($tracker[1]->local, 'BRASILIA/DF', '[1] correct location');
+is($tracker[1]->location, 'BRASILIA/DF', '[1] correct location (2)');
+is($tracker[1]->status, 'Saiu para entrega ao destinatário', '[1] correct status');
+is($tracker[1]->extra, undef, '[1] correct extra');
+
+### item 2
+is($tracker[2]->data, '31/07/2014 13:45', '[2] correct date');
+is($tracker[2]->date, '31/07/2014 13:45', '[2] correct date (2)');
+is($tracker[2]->local, 'CTE BRASILIA - BRASILIA/DF', '[2] correct location');
+is($tracker[2]->location, 'CTE BRASILIA - BRASILIA/DF', '[2] correct location (2)');
+is($tracker[2]->status, 'Encaminhado', '[2] correct status');
+is($tracker[2]->extra, 'Em trânsito para CEE BRASILIA NORTE - BRASILIA/DF', '[2] correct extra');
+
+### item 3
+is($tracker[3]->data, '29/07/2014 16:51', '[3] correct date');
+is($tracker[3]->date, '29/07/2014 16:51', '[3] correct date (2)');
+is($tracker[3]->local, 'CTE BENFICA - RIO DE JANEIRO/RJ', '[3] correct location');
+is($tracker[3]->location, 'CTE BENFICA - RIO DE JANEIRO/RJ', '[3] correct location (2)');
+is($tracker[3]->status, 'Encaminhado', '[3] correct status');
+is($tracker[3]->extra, 'Encaminhado para CTE BRASILIA - BRASILIA/DF', '[3] correct extra');
+
+### item 4
+is($tracker[4]->data, '28/07/2014 14:41', '[4] correct date');
+is($tracker[4]->date, '28/07/2014 14:41', '[4] correct date (2)');
+is($tracker[4]->local, 'AC ITAIPAVA - PETROPOLIS /RJ', '[4] correct location');
+is($tracker[4]->location, 'AC ITAIPAVA - PETROPOLIS /RJ', '[4] correct location (2)');
+is($tracker[4]->status, 'Encaminhado', '[4] correct status');
+is($tracker[4]->extra, 'Em trânsito para CTE BENFICA - RIO DE JANEIRO/RJ', '[4] correct extra');
+
+### item 5
+is($tracker[5]->data, '28/07/2014 10:02', '[5] correct date');
+is($tracker[5]->date, '28/07/2014 10:02', '[5] correct date (2)');
+is($tracker[5]->local, 'AC ITAIPAVA - PETROPOLIS /RJ', '[5] correct location');
+is($tracker[5]->location, 'AC ITAIPAVA - PETROPOLIS /RJ', '[5] correct location (2)');
+is($tracker[5]->status, 'Postado', '[5] correct status');
+is($tracker[5]->extra, undef, '[5] correct extra');
 
 done_testing;
