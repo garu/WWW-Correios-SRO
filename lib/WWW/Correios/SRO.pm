@@ -224,7 +224,6 @@ my %siglas = (
   XR => 'ENCOMENDA SUR POSTAL EXPRESSO',
   XX => 'ENCOMENDA SUR POSTAL 24 HORAS',
 );
-my $str_nao_cadastrado = "NÃO CADASTRADO NO SISTEMA";
 
 # http://www.correios.com.br/voce/enderecamento/Arquivos/guia_tecnico_encomendas.pdf
 sub sro_ok {
@@ -269,7 +268,7 @@ sub _sro {
 
     if ( defined $verifica_prefixo && $verifica_prefixo == 1 ) {
 	my $prefixo = sro_sigla( $code );
-        return unless ( defined $prefixo && $prefixo ne $str_nao_cadastrado );
+        return unless ( defined $prefixo );
     }
 
     # internal use only: we override this during testing
