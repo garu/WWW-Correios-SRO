@@ -20,17 +20,23 @@ use LWP::UserAgent;
 use HTML::TreeBuilder;
 
 use parent 'Exporter';
-our @EXPORT_OK = qw( sro sro_en sro_ok );
+our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
-# retirado de http://www.correios.com.br/servicos/rastreamento/internacional/siglas.cfm
-# as siglas DM, DH, JH e PE existem e são utilizadas pelos correios. Porém não
-# encontramos o seu significado no site. Deixamos como DESCONHECIDO
-# até conseguirmos uma resposta concreta sobre o significado destas
-# siglas
+# Verificado em 14 de Setembro de 2014 em  
+# http://www.correios.com.br/para-voce/precisa-de-ajuda/como-rastrear-um-objeto/siglas-utilizadas-no-rastreamento-de-objeto
+#
+#
+# Sabemos que as seguintes siglas são usadas: DM, DH, JH 
+# Como não existem na tabela dos correios, nao se encontra na
+# hash.
+# Um código com esse prefixo funcionará ao usar a funcao sro sem
+# passar o parametro verifica_prefixo. Porém, se passar este
+# parametro, deve retornar undef como qualquer SRO
+# cujo prefixo não está previsto na tabela dos Correios.
 my %siglas = (
   AL => 'AGENTES DE LEITURA',
   AR => 'AVISO DE RECEBIMENTO',
@@ -67,10 +73,8 @@ my %siglas = (
   DD => 'DEVOLUÇÃO DE DOCUMENTOS',
   DE => 'REMESSA EXPRESSA TALÃO E CARTÃO C/ AR',
   DF => 'E-SEDEX (LÓGICO)',
-  DG => 'DESCONHECIDO (DG)',
   DI => 'REM EXPRES COM AR DIGITAL ITAU',
   DL => 'ENCOMENDA SEDEX (LÓGICO)',
-  DM => 'DESCONHECIDO (DM)',
   DP => 'REM EXPRES COM AR DIGITAL PRF',
   DS => 'REM EXPRES COM AR DIGITAL SANTANDER',
   DT => 'REMESSA ECON.SEG.TRANSITO C/AR DIGITAL',
@@ -127,7 +131,6 @@ my %siglas = (
   JD => 'REMESSA ECONOMICA C/AR DIGITAL',
   JE => 'REMESSA ECONÔMICA C/AR DIGITAL',
   JG => 'REGISTRATO AGÊNCIA (FÍSICO)',
-  JH => 'DESCONHECIDO (JH)',
   JJ => 'REGISTRADO JUSTIÇA',
   JL => 'OBJETO REGISTRADO (LÓGICO)',
   JM => 'MALA DIRETA POSTAL ESPECIAL (LÓGICO)',
@@ -157,7 +160,6 @@ my %siglas = (
   PB => 'ENCOMENDA PAC - NÃO URGENTE',
   PC => 'ENCOMENDA PAC A COBRAR',
   PD => 'ENCOMENDA PAC - NÃO URGENTE',
-  PE => 'DESCONHECIDO (PE)',
   PF => 'PASSAPORTE',
   PG => 'ENCOMENDA PAC (ETIQUETA FÍSICA)',
   PH => 'ENCOMENDA PAC (ETIQUETA LÓGICA)',
@@ -224,10 +226,9 @@ my %siglas = (
 );
 
 # http://www.correios.com.br/voce/enderecamento/Arquivos/guia_tecnico_encomendas.pdf
-my $siglas_re = do { my $str = join '|', keys %siglas; qr/$str/ };
 sub sro_ok {
-  if ( $_[0] =~ m/^(?:$siglas_re)([0-9]{8})([0-9])BR$/i ) {
-    my ($numeros, $dv) = ($1, $2);
+  if ( $_[0] =~ m/^[A-Z|a-z]{2}([0-9]{8})([0-9])BR$/i ) {
+    my ( $numeros, $dv ) = ($1, $2);
     my @numeros = split // => $numeros;
     my @magica  = ( 8, 6, 4, 2, 3, 5, 9, 7 );
 
@@ -248,12 +249,27 @@ sub sro_ok {
   }
 }
 
+sub sro_sigla {
+  if ( sro_ok( @_ ) ) {
+    @_[0] =~ m/^([A-Z|a-z]{2}).*$/i;
+    my $prefixo = $1; 
+    return $siglas{$prefixo};
+  } else {
+    return;
+  } 
+}
+
 sub sro    { _sro('001', @_) }
 sub sro_en { _sro('002', @_) }
 
 sub _sro {
-    my ($LANG, $code, $_url) = @_;
+    my ($LANG, $code, $_url, $verifica_prefixo) = @_;
     return unless $code && sro_ok( $code );
+
+    if ( defined $verifica_prefixo && $verifica_prefixo == 1 ) {
+	my $prefixo = sro_sigla( $code );
+        return unless ( defined $prefixo );
+    }
 
     # internal use only: we override this during testing
     $_url = 'http://websro.correios.com.br/sro_bin/txect01$.Inexistente?P_LINGUA=' . $LANG . "&P_TIPO=002&P_COD_LIS=$code"
@@ -272,6 +288,7 @@ sub _sro {
     my $table = $html->find('table');
     
     return unless $table;
+    return if ( $table->as_trimmed_text eq $code);
     
     my @items = $table->find('tr');
 
@@ -331,6 +348,8 @@ API em português:
 
     return 'SRO inválido' unless sro_ok( $codigo );
 
+    my $prefixo = sro_sigla( $codigo ); # retorna "SEDEX FÍSICO";
+
     my @historico_completo = sro( $codigo );
 
     my $ultimo = sro( $codigo );
@@ -347,6 +366,8 @@ English API:
     my $code = 'SS123456789BR';  # insert tracking code here
 
     return 'invalid SRO' unless sro_ok( $code );
+
+    my $prefix = sro_sigla( $code ); # returns "SEDEX FÍSICO";
 
     my @full_history = sro_en( $code );
 
@@ -374,13 +395,16 @@ This module exports nothing by default. You have to explicitly ask for 'sro' (fo
 
 Recebe o código identificador do objeto. 
 
-Em contexto escalar, retorna retorna um objeto WWW::Correios::SRO::Item contento a entrada mais recente no registro dos Correios. Em contexto de lista, retorna um array de objetos WWW::Correios::SRO::Item, da entrada mais recente à mais antiga. Em caso de falha, retorna I<undef>. As mensagens do objeto retornado estarão em português.
+Em contexto escalar, retorna retorna um objeto WWW::Correios::SRO::Item contendo a entrada mais recente no registro dos Correios. Em contexto de lista, retorna um array de objetos WWW::Correios::SRO::Item, da entrada mais recente à mais antiga. Em caso de falha, retorna I<undef>. As mensagens do objeto retornado estarão em português.
 
+Seu terceiro parâmetro, verifica_prefixo, determina se pesquisaremos apenas os códigos com prefixos apresentados pelos Correios ($verifica_prefixo = 1) ou não.
 --
 
 Receives the item identification code.
 
 In scalar context, returns a WWW::Correios::SRO::Item object containing the most recent log entry in the Postal service. In list context, returns a list of WWW::Correios::SRO::Item objects, from the most recent entry to the oldest. Returns I<undef> upon failure. Messages on the returned object will be in portuguese.
+
+Its thirds parameter, verifica_prefixo, determines if we shall search only the codes with prefixes shown by Brazilian Post Office ($erifica_prefixo = 1) or not.
 
 =head2 sro_en
 
@@ -398,6 +422,14 @@ correios. Essa função B<não> elimina espaços da string, você deve fazer sua
 --
 
 Returns true if the given tracking code is valid, false otherwise. This function is automatically called by the C<sro> and C<sro_en> functions, so you don't have to worry about calling it directly. It should be used when you just want to know whether the tracking code is valid or not, without the need to make an HTTP request to the postal office website. This function does B<not> trim whitespaces from the given string, you have to sanitize it by yourself.
+
+=head2 sro_sigla
+
+Retorna uma string com o significado do prefixo do código que foi passado. Retorna I<undef> caso a string não seja conhecida.
+
+--
+
+Returns a string with the meaning of the code's prefix. Returns I<undef> if we don't know the meaning.
 
 =head1 OBJETO RETORNADO/RETURNED OBJECT
 
