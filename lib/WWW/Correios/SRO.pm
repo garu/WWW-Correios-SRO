@@ -26,11 +26,17 @@ our $VERSION = '0.10';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
-# retirado de http://www.correios.com.br/servicos/rastreamento/internacional/siglas.cfm
-# as siglas DM, DH, JH e PE existem e são utilizadas pelos correios. Porém não
-# encontramos o seu significado no site. Deixamos como DESCONHECIDO
-# até conseguirmos uma resposta concreta sobre o significado destas
-# siglas
+# Verificado em 14 de Setembro de 2014 em  
+# http://www.correios.com.br/para-voce/precisa-de-ajuda/como-rastrear-um-objeto/siglas-utilizadas-no-rastreamento-de-objeto
+#
+#
+# Sabemos que as seguintes siglas são usadas: DM, DH, JH 
+# Como não existem na tabela dos correios, nao se encontra na
+# hash.
+# Um código com esse prefixo funcionará ao usar a funcao sro sem
+# passar o parametro verifica_prefixo. Porém, se passar este
+# parametro, deve retornar undef como qualquer SRO
+# cujo prefixo não está previsto na tabela dos Correios.
 my %siglas = (
   AL => 'AGENTES DE LEITURA',
   AR => 'AVISO DE RECEBIMENTO',
@@ -67,10 +73,8 @@ my %siglas = (
   DD => 'DEVOLUÇÃO DE DOCUMENTOS',
   DE => 'REMESSA EXPRESSA TALÃO E CARTÃO C/ AR',
   DF => 'E-SEDEX (LÓGICO)',
-  DG => 'DESCONHECIDO (DG)',
   DI => 'REM EXPRES COM AR DIGITAL ITAU',
   DL => 'ENCOMENDA SEDEX (LÓGICO)',
-  DM => 'DESCONHECIDO (DM)',
   DP => 'REM EXPRES COM AR DIGITAL PRF',
   DS => 'REM EXPRES COM AR DIGITAL SANTANDER',
   DT => 'REMESSA ECON.SEG.TRANSITO C/AR DIGITAL',
@@ -127,7 +131,6 @@ my %siglas = (
   JD => 'REMESSA ECONOMICA C/AR DIGITAL',
   JE => 'REMESSA ECONÔMICA C/AR DIGITAL',
   JG => 'REGISTRATO AGÊNCIA (FÍSICO)',
-  JH => 'DESCONHECIDO (JH)',
   JJ => 'REGISTRADO JUSTIÇA',
   JL => 'OBJETO REGISTRADO (LÓGICO)',
   JM => 'MALA DIRETA POSTAL ESPECIAL (LÓGICO)',
@@ -157,7 +160,6 @@ my %siglas = (
   PB => 'ENCOMENDA PAC - NÃO URGENTE',
   PC => 'ENCOMENDA PAC A COBRAR',
   PD => 'ENCOMENDA PAC - NÃO URGENTE',
-  PE => 'DESCONHECIDO (PE)',
   PF => 'PASSAPORTE',
   PG => 'ENCOMENDA PAC (ETIQUETA FÍSICA)',
   PH => 'ENCOMENDA PAC (ETIQUETA LÓGICA)',
@@ -249,13 +251,16 @@ sub sro_ok {
 }
 
 sub sro_sigla {
-  if ( $_[0] =~ m/^([A-Z|a-z]{2})[0-9]{8}[0-9]BR$/i ) {
-    my $prefixo = $1;
-    return $siglas{$prefixo} || $str_nao_cadastrado;
-  }
-  else {
+  if ( sro_ok( @_ ) ) {
+    if ( $_[0] =~ m/^([A-Z|a-z]{2})[0-9]{8}[0-9]BR$/i ) {
+      my $prefixo = $1;
+      return $siglas{$prefixo} || $str_nao_cadastrado;
+    } else {
+      return;
+    }
+  } else {
     return;
-  }
+  } 
 }
 
 sub sro    { _sro('001', @_) }
