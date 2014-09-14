@@ -58,7 +58,7 @@ subtest 'Testing sub sro_sigla' => sub {
       "$code -> RE" );
 
     $code = "ZZ897448272BR";
-    is( WWW::Correios::SRO::sro_sigla($code), 'NÃO CADASTRADO NO SISTEMA', 
+    is( WWW::Correios::SRO::sro_sigla($code), undef, 
       "$code -> Code Not Found" );
 
     $code = "RE89744827BR";
