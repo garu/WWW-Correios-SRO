@@ -20,9 +20,9 @@ use LWP::UserAgent;
 use HTML::TreeBuilder;
 
 use parent 'Exporter';
-our @EXPORT_OK = qw( sro sro_en sro_ok );
+our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla );
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
@@ -222,12 +222,12 @@ my %siglas = (
   XR => 'ENCOMENDA SUR POSTAL EXPRESSO',
   XX => 'ENCOMENDA SUR POSTAL 24 HORAS',
 );
+my $str_nao_cadastrado = "NÃO CADASTRADO NO SISTEMA";
 
 # http://www.correios.com.br/voce/enderecamento/Arquivos/guia_tecnico_encomendas.pdf
-my $siglas_re = do { my $str = join '|', keys %siglas; qr/$str/ };
 sub sro_ok {
-  if ( $_[0] =~ m/^(?:$siglas_re)([0-9]{8})([0-9])BR$/i ) {
-    my ($numeros, $dv) = ($1, $2);
+  if ( $_[0] =~ m/^[A-Z|a-z]{2}([0-9]{8})([0-9])BR$/i ) {
+    my ( $numeros, $dv ) = ($1, $2);
     my @numeros = split // => $numeros;
     my @magica  = ( 8, 6, 4, 2, 3, 5, 9, 7 );
 
@@ -248,12 +248,27 @@ sub sro_ok {
   }
 }
 
+sub sro_sigla {
+  if ( $_[0] =~ m/^([A-Z|a-z]{2})[0-9]{8}[0-9]BR$/i ) {
+    my $prefixo = $1;
+    return $siglas{$prefixo} || $str_nao_cadastrado;
+  }
+  else {
+    return;
+  }
+}
+
 sub sro    { _sro('001', @_) }
 sub sro_en { _sro('002', @_) }
 
 sub _sro {
-    my ($LANG, $code, $_url) = @_;
+    my ($LANG, $code, $_url, $verifica_prefixo) = @_;
     return unless $code && sro_ok( $code );
+
+    if ( defined $verifica_prefixo && $verifica_prefixo == 1 ) {
+	my $prefixo = sro_sigla( $code );
+        return unless ( defined $prefixo && $prefixo ne $str_nao_cadastrado );
+    }
 
     # internal use only: we override this during testing
     $_url = 'http://websro.correios.com.br/sro_bin/txect01$.Inexistente?P_LINGUA=' . $LANG . "&P_TIPO=002&P_COD_LIS=$code"
@@ -272,6 +287,7 @@ sub _sro {
     my $table = $html->find('table');
     
     return unless $table;
+    return if ( $table->as_trimmed_text eq $code);
     
     my @items = $table->find('tr');
 
