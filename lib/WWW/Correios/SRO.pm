@@ -30,7 +30,7 @@ my $TIMEOUT = 30;
 # http://www.correios.com.br/para-voce/precisa-de-ajuda/como-rastrear-um-objeto/siglas-utilizadas-no-rastreamento-de-objeto
 #
 #
-# Sabemos que as seguintes siglas são usadas: DM, DH, JH 
+# Sabemos que as seguintes siglas são usadas: DM, DH, JH, PE 
 # Como não existem na tabela dos correios, nao se encontra na
 # hash.
 # Um código com esse prefixo funcionará ao usar a funcao sro sem
@@ -251,7 +251,7 @@ sub sro_ok {
 
 sub sro_sigla {
   if ( sro_ok( @_ ) ) {
-    @_[0] =~ m/^([A-Z|a-z]{2}).*$/i;
+    $_[0] =~ m/^([A-Z|a-z]{2}).*$/i;
     my $prefixo = $1; 
     return $siglas{$prefixo};
   } else {
