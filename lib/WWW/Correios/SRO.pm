@@ -225,7 +225,7 @@ my %siglas = (
   XX => 'ENCOMENDA SUR POSTAL 24 HORAS',
 );
 
-# http://www.correios.com.br/voce/enderecamento/Arquivos/guia_tecnico_encomendas.pdf
+# http://www.correios.com.br/para-sua-empresa/servicos-para-o-seu-contrato/guias/enderecamento/arquivos/guia_tecnico_encomendas.pdf/at_download/file
 sub sro_ok {
   if ( $_[0] =~ m/^[A-Z|a-z]{2}([0-9]{8})([0-9])BR$/i ) {
     my ( $numeros, $dv ) = ($1, $2);
