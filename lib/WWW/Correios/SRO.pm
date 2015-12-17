@@ -252,11 +252,11 @@ sub sro_ok {
 sub sro_sigla {
   if ( sro_ok( @_ ) ) {
     $_[0] =~ m/^([A-Z|a-z]{2}).*$/i;
-    my $prefixo = $1; 
+    my $prefixo = $1;
     return $siglas{$prefixo};
   } else {
     return;
-  } 
+  }
 }
 
 sub sro    { _sro('001', @_) }
@@ -284,12 +284,12 @@ sub _sro {
     return unless $response->is_success;
 
     my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
-    
+
     my $table = $html->find('table');
-    
+
     return unless $table;
     return if ( $table->as_trimmed_text eq $code);
-    
+
     my @items = $table->find('tr');
 
     shift @items; # drop the first 'tr'
