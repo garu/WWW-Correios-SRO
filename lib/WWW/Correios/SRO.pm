@@ -384,6 +384,9 @@ Note #2: the sro_en() function is experimental, and could be removed in future v
 
 =head1 DESCRIPTION
 
+Este módulo oferece uma interface com o serviço de rastreamento de objetos dos Correios. Até a data de publicação deste módulo não há uma API pública dos Correios para isso, então este módulo consulta o site dos Correios diretamente e faz parsing dos resultados. Sim, isso significa que mudanças no layout do site dos Correios podem afetar o funcionamento deste módulo. Até os Correios lançarem o serviço via API, isso é o que temos.
+
+This module provides an interface to the Brazilian Postal (Correios) object tracking service. Until the date of release of this module there was no public API to achieve this, so this module queries the Correios website directly and parses its results. Yup, this means any layout changes on their website could affect the correctness of this module. Until Correios releases an API for this service, that's all we can do.
 
 =head1 EXPORTS
 
@@ -478,46 +481,16 @@ the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=WWW-Correi
 automatically be notified of progress on your bug as I make changes.
 
 
-
-=head1 SUPPORT
-
-You can find documentation for this module with the perldoc command.
-
-    perldoc WWW::Correios::SRO
-
-
-You can also look for information at:
-
-=over 4
-
-=item * RT: CPAN's request tracker
-
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=WWW-Correios-SRO>
-
-=item * AnnoCPAN: Annotated CPAN documentation
-
-L<http://annocpan.org/dist/WWW-Correios-SRO>
-
-=item * CPAN Ratings
-
-L<http://cpanratings.perl.org/d/WWW-Correios-SRO>
-
-=item * Search CPAN
-
-L<http://search.cpan.org/dist/WWW-Correios-SRO/>
-
-=back
-
-
 =head1 AGRADECIMENTOS/ACKNOWLEDGEMENTS
 
 Este módulo não existiria sem o serviço gratuito de rastreamento online dos Correios. 
 
 L<< http://www.correios.com.br/servicos/rastreamento/ >>
 
+
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010 Breno G. de Oliveira.
+Copyright 2010-2015 Breno G. de Oliveira.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
