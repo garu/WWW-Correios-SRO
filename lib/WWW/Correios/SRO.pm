@@ -297,11 +297,17 @@ sub sro_en { _sro('102', @_) }
 
 sub _sro {
     my ($language, $code, $params) = @_;
-    return unless $code && sro_ok( $code );
+    return unless $code && length($code) % 13 == 0;
+    my @codes = ($code =~ /.{13}/g);
+    return if !@codes || (@codes > 1 && !$params->{multiple});
 
-    if ($params->{verifica_prefixo}) {
-        my $prefixo = sro_sigla( $code );
-        return unless defined $prefixo;
+    foreach my $code_to_check (@codes) {
+        return unless sro_ok( $code_to_check );
+
+        if ($params->{verifica_prefixo}) {
+            my $prefixo = sro_sigla( $code_to_check );
+            return unless defined $prefixo;
+        }
     }
 
     my $agent = $params->{ua};
@@ -328,22 +334,42 @@ sub _sro {
     return unless $response->is_success;
 
     my $data = _parse_response($response->content);
+    if (ref $data eq 'HASH') {
+        if (!$params->{multiple}) {
+            warn 'unexpected data from Correios webservice';
+            return;
+        }
+        if ($results eq 'U') {
+            foreach my $k (keys %$data) {
+                $data->{$k} = $data->{$k}[0];
+            }
+        }
+        return $data;
+    }
     return $results eq 'T' ? @$data : $data->[0];
 }
 
 sub _parse_response {
     my ($content) = @_;
-    return unless $content =~ m{<objeto>(.+)</objeto>}si;
+    return unless index($content, '<objeto>') >= 0;
 
-    my @events;
-    my $object = $1;
-    while ($object =~ m{<evento>(.+?)</evento>}gi) {
-        my $event = $1;
-        my $params = _parse_event($event);
-
-        push @events, $params;
+    my %data;
+    while ($content =~ m{<objeto>(.+?)</objeto>}gsi) {
+        my $object = $1;
+        my $tracking;
+        if ($object =~ m{<numero>([^>]+)</numero>}) {
+            $tracking = $1;
+        }
+        return unless $tracking;
+        my @events;
+        while ($object =~ m{<evento>(.+?)</evento>}gi) {
+            my $event = $1;
+            my $params = _parse_event($event);
+            push @events, $params;
+        }
+        $data{$tracking} = \@events;
     }
-    return \@events;
+    return (keys %data == 1 ? (values %data)[0] : \%data);
 }
 
 sub _parse_event {
@@ -515,6 +541,7 @@ Seu segundo parâmetro (opcional) é um hashref com dados extras:
         username         => 'meu_usuario',
         password         => 'minha_senha',
         verifica_prefixo => 1,
+        multiple         => 1,
     });
 
 =over 4
@@ -529,7 +556,19 @@ Seu segundo parâmetro (opcional) é um hashref com dados extras:
 
 =item * verifica_prefixo - se verdadeiro, pesquisará apenas códigos com prefixo disponibilizado pelos Correios.
 
+=item * multiple - permite passar vários códigos de rastreamento concatenados (e.g. 'SS123456789BRJR123456789BR').
+
 =back
+
+Se você passar mais de um código de rastreamento concatenado e o parâmetro 'multiple', o resultado será um hash onde cada chave é um dos códigos passados. O valor será o mesmo de antes, por chave (i.e. ou um hashref com os dados ou um array de hashrefs, dependendo se você chamou a função em contexto escalar ou de lista). Em outras palavras:
+
+    my $ultimos_status = sro( 'SS123456789BRJR123456789BR', { multiple => 1 } );
+    say $ultimos_status->{'SS123456789BR'}{status};
+
+    my %todos_os_status = sro( 'SS123456789BRJR123456789BR', { multiple => 1 } );
+    foreach my $entrada ( @{$todos_os_status{'SS123456789BR'}} ) {
+        say $entrada->{status};
+    }
 
 --
 
@@ -545,6 +584,7 @@ Its second (optional) parameter is a hashref with extra data:
         username         => 'my_user',
         password         => 'my_password',
         verifica_prefixo => 1,
+        multiple         => 1,
     });
 
 =over 4
@@ -559,7 +599,19 @@ Its second (optional) parameter is a hashref with extra data:
 
 =item * verifica_prefixo - if given a true value, determines whether we query just the codes with valid prefixes.
 
+=item * multiple - lets you pass several concatenated codes (e.g. 'SS123456789BRJR123456789BR').
+
 =back
+
+If you pass more than one concatenated code with the 'multiple' parameter, the result will be a hash where each key is one of the given codes. The value is the same as before, per key (i.e. either a hashref of data or an array of hashrefs, depending on scalar or list context). In other words:
+
+    my $last_statuses = sro( 'SS123456789BRJR123456789BR', { multiple => 1 } );
+    say $last_statuses->{'SS123456789BR'}{status};
+
+    my %all_statuses = sro( 'SS123456789BRJR123456789BR', { multiple => 1 } );
+    foreach my $entry ( @{$all_statuses{'SS123456789BR'}} ) {
+        say $entry->{status};
+    }
 
 =head2 sro_en
 
