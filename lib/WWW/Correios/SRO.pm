@@ -1,28 +1,12 @@
-package WWW::Correios::SRO::Item;
-use Class::XSAccessor::Array {
-    constructor => 'new',
-    accessors  => {
-        'data'     => 0,
-        'date'     => 0,
-        'location' => 1,
-        'local'    => 1,
-        'status'   => 2,
-        'extra'    => 3,
-    },
-};
-
 package WWW::Correios::SRO;
 
 use strict;
 use warnings;
 
-use LWP::UserAgent;
-use HTML::TreeBuilder;
-
 use parent 'Exporter';
-our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla );
+our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla status_da_entrega );
 
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
@@ -308,68 +292,126 @@ sub sro_sigla {
   }
 }
 
-sub sro    { _sro('001', @_) }
-sub sro_en { _sro('002', @_) }
+sub sro    { _sro('101', @_) }
+sub sro_en { _sro('102', @_) }
 
 sub _sro {
-    my ($LANG, $code, $_url, $verifica_prefixo) = @_;
+    my ($language, $code, $params) = @_;
     return unless $code && sro_ok( $code );
 
-    if ( defined $verifica_prefixo && $verifica_prefixo == 1 ) {
-	my $prefixo = sro_sigla( $code );
-        return unless ( defined $prefixo );
+    if ($params->{verifica_prefixo}) {
+        my $prefixo = sro_sigla( $code );
+        return unless defined $prefixo;
     }
 
-    # internal use only: we override this during testing
-    $_url = 'http://websro.correios.com.br/sro_bin/txect01$.Inexistente?P_LINGUA=' . $LANG . "&P_TIPO=002&P_COD_LIS=$code"
-        unless defined $_url;
+    my $agent = $params->{ua};
+    if (!$agent) {
+        require LWP::UserAgent;
+        $agent = LWP::UserAgent->new(
+            agent   => $AGENT,
+            timeout => (exists $params->{timeout} ? $params->{timeout} : $TIMEOUT),
+        );
+    }
 
-    my $agent = LWP::UserAgent->new(
-                       agent   => $AGENT,
-                       timeout => $TIMEOUT,
-            );
-    my $response = $agent->get($_url);
+    my $results = wantarray ? 'T' : 'U';
+    my $user    = $params->{username} || 'ECT';
+    my $pass    = $params->{password} || 'SRO';
 
+    # http://www.correios.com.br/para-voce/correios-de-a-a-z/pdf/rastreamento-de-objetos/manual_rastreamentoobjetosws.pdf
+    my $response = $agent->post(
+        'http://webservice.correios.com.br:80/service/rastro',
+        'Content-Type' => 'text/xml;charset=utf-8',
+        'SOAPAction' => 'buscaEventos',
+        'Content' => qq{<?xml version="1.0" encoding="UTF-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:res="http://resource.webservice.correios.com.br/"><soapenv:Header/><soapenv:Body><res:buscaEventos><usuario>$user</usuario><senha>$pass</senha><tipo>L</tipo><resultado>$results</resultado><lingua>$language</lingua><objetos>$code</objetos></res:buscaEventos></soapenv:Body></soapenv:Envelope>}
+    );
     return unless $response->is_success;
 
-    my $html = HTML::TreeBuilder->new_from_content( $response->decoded_content );
-
-    my $table = $html->find('table');
-
-    return unless $table;
-    return if ( $table->as_trimmed_text eq $code);
-
-    my @items = $table->find('tr');
-
-    shift @items; # drop the first 'tr'
-
-    my $i = 0;
-    my @result;
-    foreach my $item (@items) {
-        my @elements = $item->find('td');
-        return unless @elements;
-
-        # new entry
-        if ( @elements == 3 ) {
-            # short-circuit
-            return $result[0] unless wantarray or $i == 0;
-
-            my $item = WWW::Correios::SRO::Item->new;
-            $item->date($elements[0]->as_trimmed_text);
-            $item->location($elements[1]->as_trimmed_text);
-            utf8::encode(my $status = $elements[2]->as_trimmed_text);
-            $item->status($status);
-            $result[$i++] = $item;
-        }
-        # extra info for the current entry
-        else {
-            return unless ref $result[$i - 1] and scalar @elements == 1;
-            utf8::encode(my $extra = $elements[0]->as_trimmed_text);
-            $result[$i - 1]->extra($extra);
-        }
-    }
-    return wantarray ? @result : $result[0];
+    my $data = _parse_response($response->content);
+    return $results eq 'T' ? @$data : $data->[0];
 }
+
+sub _parse_response {
+    my ($content) = @_;
+    return unless $content =~ m{<objeto>(.+)</objeto>}si;
+
+    my @events;
+    my $object = $1;
+    while ($object =~ m{<evento>(.+?)</evento>}gi) {
+        my $event = $1;
+        my $params = _parse_event($event);
+
+        push @events, $params;
+    }
+    return \@events;
+}
+
+sub _parse_event {
+    my ($event) = @_;
+
+    return $event if index($event, '<') < 0;
+
+    my %params;
+    while ($event =~ m{<\s*([^>]+)\s*>\s*(.+?)\s*<\s*/\s*\1\s*>}g) {
+        my ($key, $value) = ($1, $2);
+        $params{$key} = _parse_event($value);
+    }
+    return \%params;
+}
+
+sub status_da_entrega {
+    my ($data) = @_;
+    die 'entrega_concluida() takes a HASHREF or ARRAYREF'
+        unless $data && ref $data && (ref $data eq 'ARRAY' || ref $data eq 'HASH');
+
+    my $last = ref $data eq 'ARRAY' ? $data->[0] : $data;
+    return unless $last;
+
+    # objeto dos Correios tem as mesmas chaves, independente do idioma.
+    if (!ref $last || ref $last ne 'HASH' || !exists $last->{tipo} || !exists $last->{status}) {
+        warn "status_da_entrega() data looks invalid. Missing keys?";
+        return;
+    }
+    my $tipo   = $last->{tipo};
+    my $status = $last->{status};
+    if ($tipo eq 'BDR' || $tipo eq 'BDE' || $tipo eq 'BDI') {
+        # estado final. entrega efetuada!
+        return 'entregue' if $status <= 1;
+
+        # acionar correios (produto extraviado, etc).
+        return 'erro' if    $status == 9  || $status == 12 || $status == 28
+                         || $status == 37 || $status == 43 || $status == 50
+                         || $status == 51 || $status == 52 || $status == 80
+        ;
+
+        # pacote aguardando retirada pelo interessado.
+        return 'retirar' if $status == 54 || $status == 2;
+
+        # entrega incompleta, pacote retornando.
+        return 'incompleto'
+            if (  ($status != 20 && $status != 7 && $status <= 21)
+                || $status == 26 || $status == 33 || $status == 36
+                || $status == 40 || $status == 42 || $status == 48
+                || $status == 49 || $status == 56
+            );
+
+        return 'acompanhar';
+    }
+    elsif ($tipo eq 'FC' && $status == 1) {
+        return 'incompleto';
+    }
+    elsif (
+        # pacote aguardando retirada.
+           ($tipo eq 'LDI' && ($status <= 3 || $status == 14))
+        || ($tipo eq 'OEC' && $status == 0)
+    ) {
+        return 'retirar';
+    }
+    else {
+        return 'acompanhar';
+    }
+}
+
 
 42;
 __END__
@@ -397,16 +439,36 @@ API em português:
 
     return 'SRO inválido' unless sro_ok( $codigo );
 
-    my $prefixo = sro_sigla( $codigo ); # retorna "SEDEX FÍSICO";
+    my $prefixo = sro_sigla( $codigo ); # retorna "SEDEX";
 
     my @historico_completo = sro( $codigo );
 
     my $ultimo = sro( $codigo );
 
-    $ultimo->data;    # '22/05/2010 12:10'
-    $ultimo->local;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
-    $ultimo->status;  # 'Destinatário ausente'
-    $ultimo->extra;   # 'Será realizada uma nova tentativa de entrega'
+    # $ultimo terá uma estrutura como:
+    {
+        cidade    => "BELO HORIZONTE",
+        codigo    => 31276970,
+        data      => "19/05/2017",
+        descricao => "Objeto encaminhado",
+        destino   => {
+            bairro => "Parque Novo Mundo",
+            cidade => "Sao Paulo",
+            codigo => "02170975",
+            local  => "CTE VILA MARIA",
+            uf     => "SP"
+        },
+        hora   => "22:19",
+        local  => "CTE BELO HORIZONTE",
+        status => "01",
+        tipo   => "DO",
+        uf     => "MG"
+    }
+
+    if (status_da_entrega($ultimo) eq 'entregue') {
+        say "Yay! Pedido entregue!";
+    }
+
 
 English API:
 
@@ -416,16 +478,12 @@ English API:
 
     return 'invalid SRO' unless sro_ok( $code );
 
-    my $prefix = sro_sigla( $code ); # returns "SEDEX FÍSICO";
+    my $prefix = sro_sigla( $code ); # returns "SEDEX";
 
     my @full_history = sro_en( $code );
 
     my $last = sro_en( $code );
 
-    $last->date;       # '22/05/2010 12:10'
-    $last->location;   # 'CEE JACAREPAGUA - RIO DE JANEIRO/RJ'
-    $last->status;     # 'No receiver at the address'
-    $last->extra;      # 'Delivery will be retried'
 
 Note: All messages are created by the brazilian post office website. Some messages might not be translated.
 
@@ -447,16 +505,61 @@ This module exports nothing by default. You have to explicitly ask for 'sro' (fo
 
 Recebe o código identificador do objeto. 
 
-Em contexto escalar, retorna retorna um objeto WWW::Correios::SRO::Item contendo a entrada mais recente no registro dos Correios. Em contexto de lista, retorna um array de objetos WWW::Correios::SRO::Item, da entrada mais recente à mais antiga. Em caso de falha, retorna I<undef>. As mensagens do objeto retornado estarão em português.
+Em contexto escalar, retorna retorna um hashref contendo a entrada mais recente no registro dos Correios. Em contexto de lista, retorna um array de hashrefs, da entrada mais recente à mais antiga. Em caso de falha, retorna I<undef>. As mensagens do objeto retornado estarão em português.
 
-Seu terceiro parâmetro, verifica_prefixo, determina se pesquisaremos apenas os códigos com prefixos apresentados pelos Correios ($verifica_prefixo = 1) ou não.
+Seu segundo parâmetro (opcional) é um hashref com dados extras:
+
+    sro( 'SS123456789BR', {
+        ua               => LWP::UserAgent->new,
+        timeout          => 5,
+        username         => 'meu_usuario',
+        password         => 'minha_senha',
+        verifica_prefixo => 1,
+    });
+
+=over 4
+
+=item * ua - user agent que fará a requisição. Precisa implementar o método C<post()> com a mesma interface do LWP::UserAgent.
+
+=item * timeout - se o user agent não for especificado, esse parâmetro ajusta o timeout do user agent padrão.
+
+=item * username - usuário disponibilizado pelos Correios para o seu contrato de acesso ao webservice de SRO.
+
+=item * password - senha disponibilizada pelos Correios para o seu contrato de acesso ao webservice de SRO.
+
+=item * verifica_prefixo - se verdadeiro, pesquisará apenas códigos com prefixo disponibilizado pelos Correios.
+
+=back
+
 --
 
 Receives the item identification code.
 
-In scalar context, returns a WWW::Correios::SRO::Item object containing the most recent log entry in the Postal service. In list context, returns a list of WWW::Correios::SRO::Item objects, from the most recent entry to the oldest. Returns I<undef> upon failure. Messages on the returned object will be in portuguese.
+In scalar context, returns a hashref containing the most recent log entry in the Postal service. In list context, returns a list of hashrefs, from the most recent entry to the oldest. Returns I<undef> upon failure. Messages on the returned object will be in portuguese.
 
-Its thirds parameter, verifica_prefixo, determines if we shall search only the codes with prefixes shown by Brazilian Post Office ($erifica_prefixo = 1) or not.
+Its second (optional) parameter is a hashref with extra data:
+
+    sro( 'SS123456789BR', {
+        ua               => LWP::UserAgent->new,
+        timeout          => 5,
+        username         => 'my_user',
+        password         => 'my_password',
+        verifica_prefixo => 1,
+    });
+
+=over 4
+
+=item * ua - user agent that will make the request. Must implement the C<post()> method with the same API as LWP::UserAgent.
+
+=item * timeout - if no user agent is specified, this parameter will adjust the timeout of the default one.
+
+=item * username - user provided by Correios for your webservice contract.
+
+=item * password - password provided by Correios for your webservice contract.
+
+=item * verifica_prefixo - if given a true value, determines whether we query just the codes with valid prefixes.
+
+=back
 
 =head2 sro_en
 
@@ -483,38 +586,42 @@ Retorna uma string com o significado do prefixo do código que foi passado. Reto
 
 Returns a string with the meaning of the code's prefix. Returns I<undef> if we don't know the meaning.
 
-=head1 OBJETO RETORNADO/RETURNED OBJECT
+=head2 status_da_entrega( $dados_retornados )
 
-=head2 data
+Esta função recebe os dados retornados por uma consulta via C<sro()> em formato arrayref ou hashref, e retorna uma string no seguinte formato:
 
-=head2 date (alias)
+=over 4
 
-Retorna a data/hora em que os dados de entrega foram recebidos pelo sistema, exceto no I<< 'SEDEX 10' >> e no I<< 'SEDEX Hoje' >>, em que representa o horário real da entrega. Informação sobre onde encontrar o código para rastreamento estão disponíveis (em português) no link: L<< http://www.correios.com.br/servicos/rastreamento/como_loc_objeto.cfm >>
+=item 'entregue' - entrega concluida, nada mais a ser feito.
 
-Returns the date/time in which the delivery data got into the system, except on I<< 'SEDEX 10' >> and I<< 'SEDEX Hoje' >>, where it corresponds to the actual delivery date. Information on how to find the tracking code is available in the link: L<< http://www.correios.com.br/servicos/rastreamento/como_loc_objeto.cfm >> (follow the "English version" link on that page).
+=item 'erro' - acionar Correios (objetos perdidos, extraviado, etc).
 
+=item 'retirar' - pacote na agência, aguardando retirada pelo interessado.
 
-=head2 local
+=item 'incompleto' - pacote retornado ao remetente.
 
-=head2 location (alias)
+=item 'acompanhar' - pacote em trânsito.
 
-Retorna local em que o evento ocorreu. A string retornada é prefixada por uma sigla, como B<ACF> (Agência de Correios Franqueada), B<CTE> (Centro de Tratamento de Encomendas), B<CTCE> (Centro de Tratamento de Cartas e Encomendas), B<CTCI> (Centro de Tratamento de Correio Internacional), B<CDD> (Centro de Distribuição Domiciliária), B<CEE> (Centro de Entrega de Encomendas).
-
-Returns the location where the event ocurred. The returned string is prefixed by an acronym like B<ACF> (Franchised Postal Agency), B<CTE> (Center for Item Assessment), B<CTCE> (Center for Item and Mail Assessment), B<CTCI> (Center for International Postal Assessment), B<CDD> (Center for Domiciliary Distribution), B<CEE> (Center for Item Delivery).
-
-
-=head2 status
-
-Retorna a situação registrada para o evento (postado, encaminhado, destinatário ausente, etc)
-
-Returns the registered situation for the event (no receiver at the address, etc)
+=back
 
 
-=head2 extra
+=head1 DADOS RETORNADOS/RETURNED DATA (BREAKING CHANGES)
 
-Contém informações adicionais a respeito do evento, ou I<undef>. Exemplo: 'Será realizada uma nova tentativa de entrega'.
+Em versões anteriores à 0.11, este módulo retornava um objeto (ou uma lista de objetos). A API dos Correios mudou em meados de 2016, e agora a consulta retorna dados diferentes. Para dar mais flexibilidade, optamos por um hashref livre de estrutura. 
 
-Contains additional information about the event, or I<undef>. E.g.: 'Delivery will be retried'
+Algumas informações ainda são pertinentes:
+
+=over 4
+
+=item a data/hora retornada indica o momento em que os dados de entrega foram B<recebidos pelo sistema>, exceto no I<< 'SEDEX 10' >> e no I<< 'SEDEX Hoje' >>, em que representa o horário real da entrega. Informação sobre onde encontrar o código para rastreamento estão disponíveis (em português) no link: L<< http://www.correios.com.br/servicos/rastreamento/como_loc_objeto.cfm >>
+
+=item the returned date/time refer to the moment in which the delivery data B<got into the system>, except on I<< 'SEDEX 10' >> and I<< 'SEDEX Hoje' >>, where it corresponds to the actual delivery date. Information on how to find the tracking code is available in the link: L<< http://www.correios.com.br/servicos/rastreamento/como_loc_objeto.cfm >> (follow the "English version" link on that page).
+
+=item o campo de "local" contém o local em que o evento ocorreu. A string retornada é prefixada por uma sigla, como B<ACF> (Agência de Correios Franqueada), B<CTE> (Centro de Tratamento de Encomendas), B<CTCE> (Centro de Tratamento de Cartas e Encomendas), B<CTCI> (Centro de Tratamento de Correio Internacional), B<CDD> (Centro de Distribuição Domiciliária), B<CEE> (Centro de Entrega de Encomendas).
+
+=item the "location" field contains the location where the event ocurred. The returned string is prefixed by an acronym like B<ACF> (Franchised Postal Agency), B<CTE> (Center for Item Assessment), B<CTCE> (Center for Item and Mail Assessment), B<CTCI> (Center for International Postal Assessment), B<CDD> (Center for Domiciliary Distribution), B<CEE> (Center for Item Delivery).
+
+=back
 
 
 =head1 AUTHOR
@@ -539,7 +646,7 @@ L<< http://www.correios.com.br/servicos/rastreamento/ >>
 
 =head1 LICENSE AND COPYRIGHT
 
-Copyright 2010-2015 Breno G. de Oliveira.
+Copyright 2010-2017 Breno G. de Oliveira.
 
 This program is free software; you can redistribute it and/or modify it
 under the terms of either: the GNU General Public License as published
