@@ -1,16 +1,11 @@
 Changes
 lib/WWW/Correios/SRO.pm
 Makefile.PL
-MANIFEST
-META.yml			Module meta-data (added by MakeMaker)
+MANIFEST			This list of files
+META.yml
 README.md
 t/00-load.t
 t/01-usage.t
+t/02-parsing.t
 t/manifest.t
 t/pod.t
-t/SRO.html
-t/SRO2.html
-t/SRO3.html
-t/SRO4.html
-t/SRO5.html
-t/SRO6.html
