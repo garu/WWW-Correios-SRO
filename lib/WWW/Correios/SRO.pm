@@ -6,7 +6,7 @@ use warnings;
 use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla status_da_entrega );
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
