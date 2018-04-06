@@ -1,12 +1,11 @@
 package WWW::Correios::SRO;
-
 use strict;
 use warnings;
 
 use parent 'Exporter';
 our @EXPORT_OK = qw( sro sro_en sro_ok sro_sigla status_da_entrega );
 
-our $VERSION = '0.12';
+our $VERSION = '0.13';
 my $AGENT = 'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)';
 my $TIMEOUT = 30;
 
@@ -505,7 +504,7 @@ API em português:
     {
         cidade    => "BELO HORIZONTE",
         codigo    => 31276970,
-        data      => "19/05/2017",
+        data      => "19/03/2018",
         descricao => "Objeto encaminhado",
         destino   => {
             bairro => "Parque Novo Mundo",
