@@ -19,4 +19,11 @@ WriteMakefile(
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
     clean               => { FILES => 'WWW-Correios-SRO-*' },
+    META_MERGE      => {
+      resources => {
+        license    => 'http://dev.perl.org/licenses/',
+        bugtracker => 'https://rt.cpan.org/Public/Dist/Display.html?Name=WWW-Correios-SRO',
+        repository => 'https://github.com/garu/WWW-Correios-SRO',
+      },
+    },
 );
